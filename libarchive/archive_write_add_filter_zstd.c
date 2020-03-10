@@ -135,6 +135,31 @@ archive_compressor_zstd_free(struct archive_write_filter *f)
 	return (ARCHIVE_OK);
 }
 
+static int string_is_numeric (const char* value)
+{
+	size_t len = strlen(value);
+	size_t i;
+
+	if (len == 0) {
+		return (ARCHIVE_WARN);
+	}
+	else if (len == 1 && !(value[0] >= '0' && value[0] <= '9')) {
+		return (ARCHIVE_WARN);
+	}
+	else if (!(value[0] >= '0' && value[0] <= '9') &&
+	         value[0] != '-' && value[0] != '+') {
+		return (ARCHIVE_WARN);
+	}
+
+	for (i = 1; i < len; i++) {
+		if (!(value[i] >= '0' && value[i] <= '9')) {
+			return (ARCHIVE_WARN);
+		}
+	}
+
+	return (ARCHIVE_OK);
+}
+
 /*
  * Set write options.
  */
@@ -145,13 +170,26 @@ archive_compressor_zstd_options(struct archive_write_filter *f, const char *key,
 	struct private_data *data = (struct private_data *)f->data;
 
 	if (strcmp(key, "compression-level") == 0) {
-		int level = atoi(value);
-#if HAVE_ZSTD_H && HAVE_LIBZSTD
-		if (level < 1 || level > ZSTD_maxCLevel()) {
-#else
-		/* If we don't have the library, hard-code the max level */
-		if (level < 1 || level > 22) {
+		int level;
+
+		/* If we don't have the library, hard-code the range */
+		int minimum = 1;
+		int maximum = 22;
+
+		if (string_is_numeric(value) != ARCHIVE_OK) {
+			return (ARCHIVE_WARN);
+		}
+		level = atoi(value);
+
+#if HAVE_ZSTD_H && HAVE_LIBZSTD && ZSTD_VERSION_NUMBER >= 10306
+		if (ZSTD_versionNumber() >= 10306) {
+			minimum = ZSTD_minCLevel();
+		}
 #endif
+#if HAVE_ZSTD_H && HAVE_LIBZSTD
+		maximum = ZSTD_maxCLevel();
+#endif
+		if (level < minimum || level > maximum) {
 			return (ARCHIVE_WARN);
 		}
 		data->compression_level = level;
