@@ -125,6 +125,8 @@ DEFINE_TEST(test_write_filter_zstd)
 	assertEqualIntA(a, ARCHIVE_OK,
 	    archive_write_set_filter_option(a, NULL, "compression-level", "9"));
 	assertEqualIntA(a, ARCHIVE_OK,
+	    archive_write_set_filter_option(a, NULL, "compression-level", "-1"));
+	assertEqualIntA(a, ARCHIVE_OK,
 	    archive_write_set_filter_option(a, NULL, "compression-level", "7"));
 	assertEqualIntA(a, ARCHIVE_OK, archive_write_open_memory(a, buff, buffsize, &used2));
 	for (i = 0; i < 100; i++) {
