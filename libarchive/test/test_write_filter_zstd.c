@@ -118,6 +118,14 @@ DEFINE_TEST(test_write_filter_zstd)
 	assertEqualIntA(a, ARCHIVE_OK, archive_write_add_filter_zstd(a));
 	assertEqualIntA(a, ARCHIVE_FAILED,
 	    archive_write_set_filter_option(a, NULL, "nonexistent-option", "0"));
+	assertEqualIntA(a, ARCHIVE_OK,
+	    archive_write_set_filter_option(a, NULL, "checksum", "1"));
+	assertEqualIntA(a, ARCHIVE_OK,
+	    archive_write_set_filter_option(a, NULL, "checksum", NULL));
+	assertEqualIntA(a, ARCHIVE_OK,
+	    archive_write_set_filter_option(a, NULL, "long-distance-matching", "ON"));
+	assertEqualIntA(a, ARCHIVE_OK,
+	    archive_write_set_filter_option(a, NULL, "long-distance-mzfsfatching", NULL));
 	assertEqualIntA(a, ARCHIVE_FAILED,
 	    archive_write_set_filter_option(a, NULL, "compression-level", "abc"));
 	assertEqualIntA(a, ARCHIVE_FAILED,

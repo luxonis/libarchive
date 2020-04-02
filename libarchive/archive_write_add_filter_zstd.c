@@ -50,6 +50,8 @@ __FBSDID("$FreeBSD$");
 
 struct private_data {
 	int		 compression_level;
+	unsigned	 long_distance_matching:1;
+	unsigned	 checksum:1;
 #if HAVE_ZSTD_H && HAVE_LIBZSTD
 	ZSTD_CStream	*cstream;
 	int64_t		 total_in;
@@ -67,6 +69,7 @@ struct private_data {
 #define CLEVEL_MAX 22
 
 #define MINVER_MINCLEVEL 10306
+#define MINVER_SETPARAM 10400
 
 static int archive_compressor_zstd_options(struct archive_write_filter *,
 		    const char *, const char *);
@@ -106,6 +109,8 @@ archive_write_add_filter_zstd(struct archive *_a)
 	f->code = ARCHIVE_FILTER_ZSTD;
 	f->name = "zstd";
 	data->compression_level = CLEVEL_DEFAULT;
+	data->long_distance_matching = 0;
+	data->checksum = 0;
 #if HAVE_ZSTD_H && HAVE_LIBZSTD
 	data->cstream = ZSTD_createCStream();
 	if (data->cstream == NULL) {
@@ -199,6 +204,22 @@ archive_compressor_zstd_options(struct archive_write_filter *f, const char *key,
 		}
 		data->compression_level = level;
 		return (ARCHIVE_OK);
+	} else if (strcmp(key, "long-distance-matching") == 0) {
+#if HAVE_ZSTD_H && HAVE_LIBZSTD
+		if (ZSTD_versionNumber() < MINVER_SETPARAM) {
+			return (ARCHIVE_WARN);
+		}
+#endif
+		data->long_distance_matching = (value == NULL)?0:1;
+		return (ARCHIVE_OK);
+	} else if (strcmp(key, "checksum") == 0) {
+#if HAVE_ZSTD_H && HAVE_LIBZSTD
+		if (ZSTD_versionNumber() < MINVER_SETPARAM) {
+			return (ARCHIVE_WARN);
+		}
+#endif
+		data->checksum = (value == NULL)?0:1;
+		return (ARCHIVE_OK);
 	}
 
 	/* Note: The "warn" return is just to inform the options
@@ -246,6 +267,26 @@ archive_compressor_zstd_open(struct archive_write_filter *f)
 		    "Internal error initializing zstd compressor object");
 		return (ARCHIVE_FATAL);
 	}
+
+#if ZSTD_VERSION_NUMBER >= MINVER_SETPARAM
+	if (ZSTD_versionNumber() >= MINVER_SETPARAM) {
+		if (ZSTD_isError(ZSTD_CCtx_setParameter(data->cstream,
+		    ZSTD_c_enableLongDistanceMatching, data->long_distance_matching))) {
+			archive_set_error(f->archive, ARCHIVE_ERRNO_MISC,
+			    "Internal error initializing zstd compressor object: "
+			    "Failed to set long_distance_matching");
+			return (ARCHIVE_FATAL);
+		}
+
+		if (ZSTD_isError(ZSTD_CCtx_setParameter(data->cstream,
+		    ZSTD_c_checksumFlag, data->checksum))) {
+			archive_set_error(f->archive, ARCHIVE_ERRNO_MISC,
+			    "Internal error initializing zstd compressor object: "
+			    "Failed to set checksum");
+			return (ARCHIVE_FATAL);
+		}
+	}
+#endif
 
 	return (ARCHIVE_OK);
 }
@@ -341,7 +382,7 @@ archive_compressor_zstd_open(struct archive_write_filter *f)
 
 	archive_string_init(&as);
 	/* --no-check matches library default */
-	archive_strcpy(&as, "zstd --no-check");
+	archive_strcpy(&as, "zstd");
 
 	if (data->compression_level < CLEVEL_STD_MIN) {
 		struct archive_string as2;
@@ -359,6 +400,16 @@ archive_compressor_zstd_open(struct archive_write_filter *f)
 
 	if (data->compression_level > CLEVEL_STD_MAX) {
 		archive_strcat(&as, " --ultra");
+	}
+
+	if (data->checksum) {
+		archive_strcat(&as, " --check");
+	} else {
+		archive_strcat(&as, " --no-check");
+	}
+
+	if (data->long_distance_matching) {
+		archive_strcat(&as, " --long");
 	}
 
 	f->write = archive_compressor_zstd_write;
