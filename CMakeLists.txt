@@ -492,6 +492,11 @@ IF(lzma_FOUND)
   SET(HAVE_LZMA_H 1)
   CMAKE_PUSH_CHECK_STATE()
   LIST(APPEND ADDITIONAL_LIBS lzma::lzma)
+  # Test if multithreading is supported
+  SET(CMAKE_REQUIRED_LIBRARIES "lzma")
+  CHECK_C_SOURCE_COMPILES(
+    "#include <lzma.h>\n#if LZMA_VERSION < 50020000\n#error unsupported\n#endif\nint main(void){lzma_ret ret = lzma_stream_encoder_mt(0, 0); (void)ret; return 0;}"
+    HAVE_LZMA_STREAM_ENCODER_MT)
   # Test if a macro is needed for the library.
   TRY_MACRO_FOR_LIBRARY(
     "" "lzma::lzma"
