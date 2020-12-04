@@ -151,10 +151,6 @@ IF (CMAKE_C_COMPILER_ID MATCHES "^XL$")
   SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -qinfo=pro:use")
 ENDIF(CMAKE_C_COMPILER_ID MATCHES "^XL$")
 IF (MSVC)
-  if (ENABLE_WERROR)
-    # /WX option is the same as gcc's -Werror option.
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX")
-  endif ()
   #################################################################
   # Set compile flags for debug build.
   # This is added into CMAKE_C_FLAGS when CMAKE_BUILD_TYPE is "Debug"
@@ -385,8 +381,6 @@ IF(DEFINED __GNUWIN32PATH AND EXISTS "${__GNUWIN32PATH}")
   # Maybe DLL path is "C:/Program Files/GnuWin32/bin".
   # The zlib and the bzip2 Setup program have installed programs and DLLs into
   # "C:/Program Files/GnuWin32" by default.
-  # This is convenience setting for Windows.
-  SET(CMAKE_PREFIX_PATH ${__GNUWIN32PATH} $(CMAKE_PREFIX_PATH))
   #
   # If you didn't use Setup program or installed into nonstandard path,
   # cmake cannot find out your zlib or bzip2 libraries and include files,
@@ -1352,7 +1346,7 @@ CHECK_FUNCTION_EXISTS_GLIBC(localtime_r HAVE_LOCALTIME_R)
 CHECK_FUNCTION_EXISTS_GLIBC(lstat HAVE_LSTAT)
 CHECK_FUNCTION_EXISTS_GLIBC(lutimes HAVE_LUTIMES)
 CHECK_FUNCTION_EXISTS_GLIBC(mbrtowc HAVE_MBRTOWC)
-CHECK_FUNCTION_EXISTS_GLIBC(memmove HAVE_MEMMOVE)
+set(HAVE_MEMMOVE 1)
 CHECK_FUNCTION_EXISTS_GLIBC(mkdir HAVE_MKDIR)
 CHECK_FUNCTION_EXISTS_GLIBC(mkfifo HAVE_MKFIFO)
 CHECK_FUNCTION_EXISTS_GLIBC(mknod HAVE_MKNOD)
@@ -1384,11 +1378,11 @@ CHECK_FUNCTION_EXISTS_GLIBC(utime HAVE_UTIME)
 CHECK_FUNCTION_EXISTS_GLIBC(utimes HAVE_UTIMES)
 CHECK_FUNCTION_EXISTS_GLIBC(utimensat HAVE_UTIMENSAT)
 CHECK_FUNCTION_EXISTS_GLIBC(vfork HAVE_VFORK)
-CHECK_FUNCTION_EXISTS_GLIBC(wcrtomb HAVE_WCRTOMB)
-CHECK_FUNCTION_EXISTS_GLIBC(wcscmp HAVE_WCSCMP)
-CHECK_FUNCTION_EXISTS_GLIBC(wcscpy HAVE_WCSCPY)
-CHECK_FUNCTION_EXISTS_GLIBC(wcslen HAVE_WCSLEN)
-CHECK_FUNCTION_EXISTS_GLIBC(wctomb HAVE_WCTOMB)
+set(HAVE_WCRTOMB 1)
+set(HAVE_WCSCMP 1)
+set(HAVE_WCSCPY 1)
+set(HAVE_WCSLEN 1)
+set(HAVE_WCTOMB 1)
 CHECK_FUNCTION_EXISTS_GLIBC(_ctime64_s HAVE__CTIME64_S)
 CHECK_FUNCTION_EXISTS_GLIBC(_fseeki64 HAVE__FSEEKI64)
 CHECK_FUNCTION_EXISTS_GLIBC(_get_timezone HAVE__GET_TIMEZONE)
@@ -1401,10 +1395,10 @@ CHECK_FUNCTION_EXISTS(cygwin_conv_path HAVE_CYGWIN_CONV_PATH)
 CHECK_FUNCTION_EXISTS(fseeko HAVE_FSEEKO)
 CHECK_FUNCTION_EXISTS(strerror_r HAVE_STRERROR_R)
 CHECK_FUNCTION_EXISTS(strftime HAVE_STRFTIME)
-CHECK_FUNCTION_EXISTS(vprintf HAVE_VPRINTF)
-CHECK_FUNCTION_EXISTS(wmemcmp HAVE_WMEMCMP)
-CHECK_FUNCTION_EXISTS(wmemcpy HAVE_WMEMCPY)
-CHECK_FUNCTION_EXISTS(wmemmove HAVE_WMEMMOVE)
+set(HAVE_VPRINTF 1)
+set(HAVE_WMEMCMP 1)
+set(HAVE_WMEMCPY 1)
+set(HAVE_WMEMMOVE 1)
 
 CMAKE_POP_CHECK_STATE()	# Restore the state of the variables
 
@@ -2004,13 +1998,10 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/build/cmake/config.h.in
 INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_BINARY_DIR})
 ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
-# Handle generation of the libarchive.pc file for pkg-config
-INCLUDE(CreatePkgConfigFile)
-
 #
 # Register installation of PDF documents.
 #
-IF(WIN32 AND NOT CYGWIN)
+IF(0)
   #
   # On Windows platform, It's better that we install PDF documents
   # on one's computer.
