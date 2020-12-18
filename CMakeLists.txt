@@ -1,5 +1,8 @@
 #
-CMAKE_MINIMUM_REQUIRED(VERSION 3.12 FATAL_ERROR)
+# Works with 3.10 on Linux if CMP0074 is not set, so reverting this change from
+# https://github.com/luxonis/libarchive/commit/d3125216
+# CMAKE_MINIMUM_REQUIRED(VERSION 3.12 FATAL_ERROR)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12 FATAL_ERROR)
 #
 include("build/cmake/HunterGate.cmake")
 HunterGate(
